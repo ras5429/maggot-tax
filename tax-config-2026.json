@@ -1,0 +1,33 @@
+{
+  "taxYear": 2026,
+  "standardDeduction": { "MFJ": 32200 },
+  "coloradoRate": 0.044,
+  "socialSecurityWageBase": 184500,
+  "qbiThreshold_MFJ": 403500,
+
+  "federalBrackets_MFJ": [
+    [24800, 0.10],
+    [100800, 0.12],
+    [211650, 0.22],
+    [403550, 0.24],
+    [512450, 0.32],
+    [768700, 0.35],
+    [null, 0.37]
+  ],
+
+  "rates": {
+    "socialSecurity": 0.124,
+    "medicare": 0.029,
+    "seNetFactor": 0.9235,
+    "qbi": 0.20,
+    "additionalMedicareThreshold_MFJ": 250000,
+    "additionalMedicareRate": 0.009
+  },
+
+  "periods": [
+    { "key": "Q1", "label": "Quarter 1", "months": 3,  "due": "April 15, 2026",     "federalPct": 0.225, "coloradoPct": 0.175 },
+    { "key": "Q2", "label": "Quarter 2", "months": 5,  "due": "June 15, 2026",      "federalPct": 0.45,  "coloradoPct": 0.35  },
+    { "key": "Q3", "label": "Quarter 3", "months": 8,  "due": "September 15, 2026", "federalPct": 0.675, "coloradoPct": 0.525 },
+    { "key": "Q4", "label": "Quarter 4", "months": 12, "due": "January 15, 2027",   "federalPct": 0.90,  "coloradoPct": 0.70  }
+  ]
+}

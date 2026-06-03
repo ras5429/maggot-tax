@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quarterly Estimated Tax Estimator (Federal + Colorado)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef4fc; --bg2:#f7fafe; --surface:#ffffff;
+    --ink:#16263f; --ink-soft:#5a6c84; --ink-faint:#8a99ad;
+    --blue:#2f63c4; --blue-deep:#1f4894; --blue-soft:#e8f0fc; --blue-line:#d6e3f6; --blue-tint:#f2f7fe;
+    --green:#1f9c79; --green-soft:#e6f6f0; --amber:#c9703f; --amber-soft:#fbeee4;
+    --ahead:#3f72c4; --ahead-soft:#e8f0fc;
+    --shadow:0 1px 2px rgba(31,72,148,.04), 0 12px 32px rgba(31,72,148,.07);
+    --shadow-sm:0 1px 2px rgba(31,72,148,.05), 0 4px 12px rgba(31,72,148,.05);
+    --radius:18px; --radius-sm:11px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Hanken Grotesk',sans-serif;color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 12% -8%, #ffffff 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(900px 700px at 100% 0%, #e4eefb 0%, rgba(228,238,251,0) 50%),
+      linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+    background-attachment:fixed;min-height:100vh;line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:0 18px 80px;
+  }
+  .wrap{max-width:880px;margin:0 auto}
+
+  header{padding:48px 0 22px;text-align:center}
+  .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:14px}
+  h1{font-size:clamp(27px,5vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.08}
+  h1 .accent{color:var(--blue)}
+  .sub{margin-top:13px;color:var(--ink-soft);font-size:15.5px;max-width:560px;margin:13px auto 0}
+
+  .toolbar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:24px 0 12px}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:11px;padding:11px 17px;
+    border:1px solid var(--blue-line);background:var(--surface);color:var(--ink);transition:.18s ease;
+    display:inline-flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm)}
+  .btn:hover{transform:translateY(-1px);border-color:var(--blue);box-shadow:var(--shadow)}
+  .btn:active{transform:translateY(0)}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.primary:hover{background:var(--blue-deep);border-color:var(--blue-deep)}
+  .btn.ghost{background:transparent;box-shadow:none;color:var(--ink-soft)}
+  .btn.ghost:hover{color:var(--amber);border-color:var(--amber)}
+
+  .cfgbar{display:flex;gap:9px;justify-content:center;align-items:center;flex-wrap:wrap;
+    font-size:12.5px;color:var(--ink-faint);margin-bottom:28px}
+  .cfgbar b{color:var(--ink-soft);font-weight:700}
+  .link{font-family:inherit;font-size:12.5px;background:none;border:none;color:var(--blue);font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+  .link:hover{color:var(--blue-deep)}
+  .cfgbar .dot{opacity:.5}
+
+  .card{background:var(--surface);border:1px solid var(--blue-line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:26px;margin-bottom:20px;animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .card h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:4px}
+  .card .hint{font-size:14px;color:var(--ink-soft);margin-bottom:20px}
+
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--blue-tint);
+    border:1px solid var(--blue-line);padding:6px;border-radius:14px}
+  .seg button{font-family:inherit;border:none;background:transparent;cursor:pointer;padding:13px 6px 11px;
+    border-radius:10px;color:var(--ink-soft);font-weight:600;font-size:14px;transition:.18s ease;text-align:center;line-height:1.15}
+  .seg button .q{display:block;font-size:15px;font-weight:700;color:inherit}
+  .seg button .d{display:block;font-size:11px;color:var(--ink-faint);font-weight:500;margin-top:3px}
+  .seg button:hover{color:var(--ink)}
+  .seg button.active{background:var(--surface);color:var(--blue);box-shadow:var(--shadow-sm)}
+  .seg button.active .d{color:var(--blue)}
+
+  .period{border:1px solid var(--blue-line);border-radius:var(--radius-sm);padding:20px 20px 6px;margin-bottom:16px;
+    background:linear-gradient(180deg,#fff,var(--blue-tint))}
+  .period.current{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+  .period-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .period-head .name{font-weight:800;font-size:18px;letter-spacing:-.01em}
+  .period-head .name .badge{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--blue);background:var(--blue-soft);padding:3px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+  .period-head .cut{font-size:13px;color:var(--ink-soft)}
+  .period-head .cut b{color:var(--ink);font-weight:600}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 16px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:5px}
+  .field label .q{color:var(--ink-faint);font-weight:500}
+  .field .desc{font-size:11.5px;color:var(--ink-faint);margin-top:4px;line-height:1.35}
+  .inp{position:relative}
+  .inp .dollar{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-faint);font-size:14px;pointer-events:none}
+  .inp input{width:100%;font-family:'JetBrains Mono',monospace;font-size:14.5px;font-variant-numeric:tabular-nums;
+    padding:11px 12px 11px 26px;border:1px solid var(--blue-line);border-radius:9px;background:#fff;color:var(--ink);transition:.16s ease}
+  .inp input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+  .inp input::placeholder{color:#c2cedd;font-weight:400}
+
+  .sub-head{grid-column:1/-1;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);
+    font-weight:700;margin:8px 0 -2px;padding-top:10px;border-top:1px dashed var(--blue-line)}
+  details.adv{grid-column:1/-1;margin:4px 0 12px}
+  details.adv summary{cursor:pointer;font-size:12.5px;color:var(--blue);font-weight:600;list-style:none;
+    display:inline-flex;align-items:center;gap:6px;user-select:none}
+  details.adv summary::-webkit-details-marker{display:none}
+  details.adv summary .chev{transition:.2s;display:inline-block}
+  details.adv[open] summary .chev{transform:rotate(90deg)}
+  details.adv .grid{margin-top:13px}
+
+  .pay-now{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px}
+  @media(max-width:560px){.pay-now{grid-template-columns:1fr}}
+  .paybox{border-radius:14px;padding:20px 20px 18px;position:relative;overflow:hidden;border:1px solid var(--blue-line)}
+  .paybox.fed{background:linear-gradient(155deg,#fff,var(--blue-soft))}
+  .paybox.co{background:linear-gradient(155deg,#fff,var(--blue-tint))}
+  .paybox .tag{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--blue)}
+  .paybox .amt{font-family:'JetBrains Mono',monospace;font-size:33px;font-weight:600;letter-spacing:-.02em;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+  .paybox .by{font-size:13px;color:var(--ink-soft)}
+  .paybox .note{font-size:12px;color:var(--amber);margin-top:8px;font-weight:600}
+
+  table.summary{width:100%;border-collapse:collapse;margin-top:6px}
+  table.summary th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;text-align:right;padding:0 0 11px}
+  table.summary th:first-child{text-align:left}
+  table.summary td{padding:11px 0;border-top:1px solid var(--blue-line);font-size:14px;text-align:right;
+    font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+  table.summary td:first-child{text-align:left;font-family:'Hanken Grotesk',sans-serif;font-weight:600}
+  table.summary td .qd{display:block;font-size:11px;color:var(--ink-faint);font-weight:500;font-family:'Hanken Grotesk',sans-serif}
+  .pill{display:inline-block;font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .pill.ok{background:var(--green-soft);color:var(--green)}
+  .pill.short{background:var(--amber-soft);color:var(--amber)}
+  .pill.ahead{background:var(--ahead-soft);color:var(--ahead)}
+  .pill.pending{background:#eef1f5;color:var(--ink-faint)}
+
+  details.work{margin-top:14px;border-top:1px solid var(--blue-line);padding-top:8px}
+  details.work summary{cursor:pointer;font-size:13px;color:var(--blue);font-weight:600;list-style:none;
+    display:inline-flex;align-items:center;gap:7px;user-select:none;padding:6px 0}
+  details.work summary::-webkit-details-marker{display:none}
+  details.work summary .chev{transition:.2s}
+  details.work[open] summary .chev{transform:rotate(90deg)}
+  .wtable{width:100%;border-collapse:collapse;margin:8px 0 4px}
+  .wtable td{padding:6px 0;font-size:13px;border-bottom:1px solid var(--blue-tint);color:var(--ink-soft)}
+  .wtable td:last-child{text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink);font-variant-numeric:tabular-nums}
+  .wtable tr.tot td{font-weight:700;color:var(--ink);border-bottom:none;padding-top:9px}
+  .wtable tr.tot td:last-child{color:var(--blue)}
+  .wgroup{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--blue);font-weight:700;padding-top:14px!important;border-bottom:none!important}
+
+  .warn{background:var(--amber-soft);border:1px solid #f0d6c4;border-radius:10px;padding:12px 14px;font-size:13px;color:#8a4a25;margin-top:14px;line-height:1.45}
+  .warn b{color:#6f3a1d}
+  .empty{text-align:center;color:var(--ink-faint);font-size:14px;padding:30px 10px}
+  .disclaimer{font-size:12.5px;color:var(--ink-faint);line-height:1.55;text-align:center;max-width:640px;margin:8px auto 0;padding:0 8px}
+  .disclaimer b{color:var(--ink-soft)}
+  footer{text-align:center;margin-top:30px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+    padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 12px 30px rgba(22,38,63,.3);
+    opacity:0;pointer-events:none;transition:.28s cubic-bezier(.2,.7,.2,1);z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker" id="docYear">Tax Year 2026 · Married Filing Jointly</div>
+    <h1>Quarterly Estimated Tax <span class="accent">Estimator</span></h1>
+    <p class="sub">Annualized income installment method for federal (IRS Worksheet 2&#8209;9) and Colorado (DR&nbsp;0204). Enter your actual year&#8209;to&#8209;date numbers each quarter — no projections required.</p>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn primary" id="importBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Load saved file
+    </button>
+    <button class="btn" id="exportBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+      Export this year's file
+    </button>
+    <button class="btn ghost" id="resetBtn">Start fresh</button>
+    <input type="file" id="fileInput" accept="application/json,.json" hidden>
+  </div>
+
+  <div class="cfgbar">
+    <span>Tax rules in use: <b id="cfgYear">2026 (built-in)</b></span>
+    <span class="dot">·</span>
+    <button class="link" id="loadCfgBtn">Load config file</button>
+    <span class="dot">·</span>
+    <button class="link" id="dlCfgBtn">Download config template</button>
+    <input type="file" id="cfgInput" accept="application/json,.json" hidden>
+  </div>
+
+  <div class="card">
+    <h2>Which quarter are you filing?</h2>
+    <p class="hint">Pick the payment you're working on. You'll be asked for cumulative figures through that quarter and every quarter before it.</p>
+    <div class="seg" id="seg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Your numbers</h2>
+    <p class="hint">All amounts are <b>cumulative year&#8209;to&#8209;date</b> through each cutoff date — total so far this year, not just that quarter.</p>
+    <div id="periods"></div>
+  </div>
+
+  <div class="card" id="resultsCard">
+    <h2>What to pay</h2>
+    <p class="hint" id="resultsHint"></p>
+    <div id="results"></div>
+  </div>
+
+  <footer>
+    <p class="disclaimer">
+      <b>This is an estimate, not tax advice.</b> It implements the federal and Colorado annualized worksheets with the standard deduction, the QBI deduction, and self&#8209;employment tax, but it doesn't cover every situation (itemized deductions, investment income / NIIT, credits beyond the basics, multi&#8209;state income). Verify against the official worksheets or a tax professional before relying on it.
+      <br><span id="figLine"></span>
+    </p>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║   TAX CONFIG  —  EDIT THIS BLOCK FOR A NEW TAX YEAR. NOTHING ELSE.      ║
+   ║                                                                        ║
+   ║   Lines marked ★ change every year (inflation adjustments).            ║
+   ║   The "rates" block is statutory and almost never changes.             ║
+   ║   The same values live in the companion file tax-config-YYYY.json,     ║
+   ║   which you can load at runtime via "Load config file".                ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const TAX_CONFIG = {
+  taxYear: 2026,
+  standardDeduction: { MFJ: 32200 },          // ★ 2026 MFJ standard deduction
+  coloradoRate: 0.044,                         // ★ Colorado flat rate (moves occasionally)
+  socialSecurityWageBase: 184500,              // ★ 2026 Social Security wage base
+  qbiThreshold_MFJ: 403500,                    // ★ taxable-income threshold for full 20% QBI
+
+  // ★ 2026 MFJ ordinary-income brackets: [upper bound, marginal rate]. Use null for the top.
+  federalBrackets_MFJ: [
+    [24800,    0.10],
+    [100800,   0.12],
+    [211650,   0.22],
+    [403550,   0.24],
+    [512450,   0.32],
+    [768700,   0.35],
+    [null,     0.37]
+  ],
+
+  // Statutory rates — rarely change:
+  rates: {
+    socialSecurity: 0.124,                     // SE Social Security portion
+    medicare: 0.029,                           // SE Medicare portion
+    seNetFactor: 0.9235,                        // net earnings = net profit x this
+    qbi: 0.20,                                  // QBI deduction rate
+    additionalMedicareThreshold_MFJ: 250000,
+    additionalMedicareRate: 0.009
+  },
+
+  // Installment schedule. "months" = months elapsed at the cutoff (drives annualization,
+  // the prorated SS cap, and the SE factors). "due" dates ★ shift yearly for weekends/holidays.
+  // The federal/Colorado percentages are statutory (fed builds to 90%, Colorado to 70%).
+  periods: [
+    { key:"Q1", label:"Quarter 1", months:3,  due:"April 15, 2026",     federalPct:0.225, coloradoPct:0.175 },
+    { key:"Q2", label:"Quarter 2", months:5,  due:"June 15, 2026",      federalPct:0.45,  coloradoPct:0.35  },
+    { key:"Q3", label:"Quarter 3", months:8,  due:"September 15, 2026", federalPct:0.675, coloradoPct:0.525 },
+    { key:"Q4", label:"Quarter 4", months:12, due:"January 15, 2027",   federalPct:0.90,  coloradoPct:0.70  }
+  ]
+};
+/* ═══════════════════ END EDITABLE CONFIG ═══════════════════════════════ */
+
+
+/* ---- derive the working config (everything below reads from CFG) ---- */
+const CUTOFF_LABELS = {3:"March 31", 5:"May 31", 8:"August 31", 12:"December 31"};
+function deriveConfig(cfg){
+  const R = cfg.rates;
+  const brackets = cfg.federalBrackets_MFJ.map(([u,r]) => [u===null ? Infinity : u, r]);
+  const periods = cfg.periods.map(p => {
+    const ann = 12 / p.months;
+    return {
+      key:p.key, label:p.label, due:p.due,
+      cut:"Through " + (CUTOFF_LABELS[p.months] || (p.months+" months")),
+      ann,
+      fedPct:p.federalPct, coPct:p.coloradoPct,
+      ssLimit: cfg.socialSecurityWageBase * p.months / 12,   // prorated SS cap (derived)
+      ssF:  R.socialSecurity * ann,                           // SE SS factor (derived)
+      medF: R.medicare * ann,                                 // SE Medicare factor (derived)
+      seDiv: 2 * ann                                          // half-SE-deduction divisor (derived)
+    };
+  });
+  return {
+    taxYear:cfg.taxYear, std:cfg.standardDeduction.MFJ, coRate:cfg.coloradoRate,
+    wageBase:cfg.socialSecurityWageBase, qbiThreshold:cfg.qbiThreshold_MFJ,
+    seNetFactor:R.seNetFactor, qbiRate:R.qbi,
+    amThreshold:R.additionalMedicareThreshold_MFJ, amRate:R.additionalMedicareRate,
+    brackets, periods, raw:cfg
+  };
+}
+
+let CFG = deriveConfig(TAX_CONFIG);
+let cfgLabel = TAX_CONFIG.taxYear + " (built-in)";
+
+/* ---------------- state ---------------- */
+function blankPeriod(){
+  return { niYTD:"", wagesYTD:"", fedWHYTD:"", coWHYTD:"", selfW2SS:"", otherIncYTD:"", fedPaid:"", coPaid:"" };
+}
+let state = { version:1, taxYear:CFG.taxYear, filingStatus:"MFJ", selected:0,
+  periods: CFG.periods.map(()=>blankPeriod()) };
+
+const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
+const usd  = n => "$"+(Math.round(n*100)/100).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const usd0 = n => "$"+Math.round(n).toLocaleString("en-US");
+const MONTHS={January:"Jan",February:"Feb",March:"Mar",April:"Apr",May:"May",June:"Jun",July:"Jul",August:"Aug",September:"Sep",October:"Oct",November:"Nov",December:"Dec"};
+const shortDue = d => { const m=String(d).match(/^(\w+)\s+(\d+)/); return m ? (MONTHS[m[1]]||m[1])+" "+m[2] : d; };
+
+/* ---------------- tax math ---------------- */
+function fedTax(ti){
+  let tax=0, lower=0;
+  for(const [upper,rate] of CFG.brackets){
+    if(ti>upper){ tax += (upper-lower)*rate; lower=upper; }
+    else { tax += (ti-lower)*rate; return Math.max(0,tax); }
+  }
+  return Math.max(0,tax);
+}
+
+function computePeriod(p, inp){
+  const netProfit = Math.max(0, num(inp.niYTD));
+  const wages = num(inp.wagesYTD), other = num(inp.otherIncYTD), selfW2SS = Math.max(0, num(inp.selfW2SS));
+
+  // Self-employment tax (Worksheet 2-9 Section B)
+  const netEarnings = netProfit * CFG.seNetFactor;        // line 33
+  const availSS = Math.max(0, p.ssLimit - selfW2SS);      // line 36
+  const ssPart  = p.ssF  * Math.min(netEarnings, availSS);// line 38
+  const medPart = p.medF * netEarnings;                   // line 40
+  const seTax   = ssPart + medPart;                       // line 41 (annualized)
+  const seDeduct= seTax / p.seDiv;                        // line 43 (period half-SE deduction)
+
+  // Income tax (Section A)
+  const agi    = netProfit + wages + other - seDeduct;    // line 1
+  const annAGI = agi * p.ann;                             // line 3
+  const taxBeforeQBI = Math.max(0, annAGI - CFG.std);
+  const annNetProfit = netProfit * p.ann;
+  const qbiBase = Math.max(0, annNetProfit - seTax/2);    // net profit less the deductible half of SE tax
+  const qbiDed  = CFG.qbiRate * Math.min(qbiBase, taxBeforeQBI);
+  const qbiWarn = taxBeforeQBI > CFG.qbiThreshold;
+  const taxable = Math.max(0, taxBeforeQBI - qbiDed);     // line 11
+  const incomeTax = fedTax(taxable);                      // line 12
+
+  const medBase = (wages + netEarnings) * p.ann;
+  const addlMed = Math.max(0, medBase - CFG.amThreshold) * CFG.amRate; // line 18 (usually 0)
+
+  const totalTax = incomeTax + seTax + addlMed;           // line 19
+  const fedCumReq = totalTax * p.fedPct;                  // line 23
+  const coAnnTax  = taxable * CFG.coRate;                 // CO taxable income = federal taxable income
+  const coCumReq  = coAnnTax * p.coPct;
+
+  return { netProfit, netEarnings, ssPart, medPart, seTax, seDeduct, annAGI,
+           qbiDed, qbiWarn, taxable, incomeTax, addlMed, totalTax, fedCumReq, coAnnTax, coCumReq };
+}
+
+function computeAll(){
+  const sel = state.selected, rows = [];
+  let fedPriorReq=0, coPriorReq=0, fedActualPrior=0, coActualPrior=0, hasAny=false;
+  for(let i=0;i<=sel;i++){
+    const inp = state.periods[i];
+    if(num(inp.niYTD)||num(inp.wagesYTD)||num(inp.fedWHYTD)||num(inp.coWHYTD)) hasAny=true;
+    const c = computePeriod(CFG.periods[i], inp);
+    const fedWH=num(inp.fedWHYTD), coWH=num(inp.coWHYTD);
+    const fedInstallReq = Math.max(0, c.fedCumReq - fedWH - fedPriorReq);
+    const coInstallReq  = Math.max(0, c.coCumReq  - coWH  - coPriorReq);
+    const fedRecNow = Math.max(0, c.fedCumReq - fedWH - fedActualPrior);
+    const coRecNow  = Math.max(0, c.coCumReq  - coWH  - coActualPrior);
+    const fedPaid=num(inp.fedPaid), coPaid=num(inp.coPaid);
+    rows.push({ i, p:CFG.periods[i], c, inp, fedInstallReq, coInstallReq, fedRecNow, coRecNow, fedPaid, coPaid, fedWH, coWH });
+    fedPriorReq+=fedInstallReq; coPriorReq+=coInstallReq; fedActualPrior+=fedPaid; coActualPrior+=coPaid;
+  }
+  return { rows, hasAny };
+}
+
+/* ===================== render ===================== */
+const $ = s => document.querySelector(s);
+
+function updateChrome(){
+  $("#docYear").textContent = "Tax Year "+CFG.taxYear+" · Married Filing Jointly";
+  $("#cfgYear").textContent = cfgLabel;
+  $("#figLine").innerHTML = "Figures in use: "+CFG.taxYear+" MFJ standard deduction "+usd0(CFG.std)+
+    " · Social Security wage base "+usd0(CFG.wageBase)+" · Colorado flat rate "+(CFG.coRate*100).toFixed(2)+"%.";
+}
+
+function renderSeg(){
+  const seg=$("#seg"); seg.innerHTML="";
+  CFG.periods.forEach((p,i)=>{
+    const b=document.createElement("button");
+    b.className = i===state.selected ? "active":"";
+    b.innerHTML = `<span class="q">${p.label.replace("Quarter ","Q")}</span><span class="d">due ${shortDue(p.due)}</span>`;
+    b.onclick = ()=>{ state.selected=i; renderSeg(); renderPeriods(); renderResults(); };
+    seg.appendChild(b);
+  });
+}
+
+const F = [
+  { k:"niYTD",    label:"Self-employment net profit", q:"(her business, after expenses)", desc:"Net profit so far this year. The SE-tax math is handled for you." },
+  { k:"wagesYTD", label:"W-2 wages", q:"(your paychecks)", desc:"Your gross wages year-to-date." },
+  { k:"fedWHYTD", label:"Federal tax withheld", q:"(YTD)", desc:"From your W-2 paychecks, year-to-date." },
+  { k:"coWHYTD",  label:"Colorado tax withheld", q:"(YTD)", desc:"From your W-2 paychecks, year-to-date." }
+];
+
+function renderPeriods(){
+  const box=$("#periods"); box.innerHTML="";
+  for(let i=0;i<=state.selected;i++){
+    const p=CFG.periods[i], inp=state.periods[i], isCur=i===state.selected;
+    const card=document.createElement("div");
+    card.className="period"+(isCur?" current":"");
+    let fields = F.map(f=>`
+      <div class="field">
+        <label>${f.label} <span class="q">${f.q}</span></label>
+        <div class="inp"><span class="dollar">$</span>
+          <input type="text" inputmode="decimal" data-i="${i}" data-k="${f.k}" value="${inp[f.k]}" placeholder="0.00" autocomplete="off"></div>
+        <div class="desc">${f.desc}</div>
+      </div>`).join("");
+    fields += `
+      <details class="adv">
+        <summary><span class="chev">›</span> Advanced (optional — usually left blank)</summary>
+        <div class="grid">
+          <div class="field">
+            <label>Other taxable income <span class="q">(YTD)</span></label>
+            <div class="inp"><span class="dollar">$</span>
+              <input type="text" inputmode="decimal" data-i="${i}" data-k="otherIncYTD" value="${inp.otherIncYTD}" placeholder="0.00" autocomplete="off"></div>
+            <div class="desc">Interest, dividends, etc. Leave blank if none.</div>
+          </div>
+          <div class="field">
+            <label>Self-employed person's own W-2 wages <span class="q">(YTD)</span></label>
+            <div class="inp"><span class="dollar">$</span>
+              <input type="text" inputmode="decimal" data-i="${i}" data-k="selfW2SS" value="${inp.selfW2SS}" placeholder="0.00" autocomplete="off"></div>
+            <div class="desc"><b>Almost always $0.</b> Only her own W-2 job wages go here — never a spouse's. A spouse's wages do not affect her self-employment tax.</div>
+          </div>
+        </div>
+      </details>`;
+    fields += `<div class="sub-head">Estimated payment ${isCur?"you plan to make":"you actually made"} for this quarter</div>
+      <div class="field"><label>Federal estimated payment</label>
+        <div class="inp"><span class="dollar">$</span><input type="text" inputmode="decimal" data-i="${i}" data-k="fedPaid" value="${inp.fedPaid}" placeholder="0.00" autocomplete="off"></div></div>
+      <div class="field"><label>Colorado estimated payment</label>
+        <div class="inp"><span class="dollar">$</span><input type="text" inputmode="decimal" data-i="${i}" data-k="coPaid" value="${inp.coPaid}" placeholder="0.00" autocomplete="off"></div></div>`;
+    card.innerHTML = `
+      <div class="period-head">
+        <div class="name">${p.label}${isCur?'<span class="badge">filing now</span>':''}</div>
+        <div class="cut"><b>${p.cut}</b> · due ${p.due}</div>
+      </div>
+      <div class="grid">${fields}</div>`;
+    box.appendChild(card);
+  }
+  box.querySelectorAll("input").forEach(el=>{
+    el.addEventListener("input", e=>{
+      state.periods[+e.target.dataset.i][e.target.dataset.k]=e.target.value;
+      renderResults();
+    });
+  });
+}
+
+function statusPill(req, paid, isCurrent){
+  if(isCurrent && paid===0) return `<span class="pill pending">filing now</span>`;
+  const diff=paid-req;
+  if(Math.abs(diff)<1) return `<span class="pill ok">on track</span>`;
+  if(diff<0) return `<span class="pill short">short ${usd0(-diff)}</span>`;
+  return `<span class="pill ahead">ahead ${usd0(diff)}</span>`;
+}
+
+function renderResults(){
+  const { rows, hasAny } = computeAll();
+  const out=$("#results"), hint=$("#resultsHint");
+  if(!hasAny){ hint.textContent=""; out.innerHTML=`<div class="empty">Enter your numbers above and your federal and Colorado payments will appear here.</div>`; return; }
+  const cur=rows[rows.length-1], sel=state.selected;
+  const cuFed=cur.fedRecNow-cur.fedInstallReq, cuCo=cur.coRecNow-cur.coInstallReq;
+  hint.innerHTML=`For <b>${cur.p.label}</b>, due <b>${cur.p.due}</b>.`;
+
+  let html=`<div class="pay-now">
+    <div class="paybox fed"><div class="tag">Federal — pay by ${cur.p.due}</div>
+      <div class="amt">${usd(cur.fedRecNow)}</div><div class="by">IRS estimated payment</div>
+      ${cuFed>1?`<div class="note">includes ${usd0(cuFed)} catch-up from earlier quarters</div>`:``}</div>
+    <div class="paybox co"><div class="tag">Colorado — pay by ${cur.p.due}</div>
+      <div class="amt">${usd(cur.coRecNow)}</div><div class="by">CO Dept. of Revenue payment</div>
+      ${cuCo>1?`<div class="note">includes ${usd0(cuCo)} catch-up from earlier quarters</div>`:``}</div>
+  </div>`;
+
+  if(cur.c.qbiWarn) html+=`<div class="warn"><b>Heads up:</b> annualized income is high enough that the QBI deduction may be limited for a coaching/athletics business. This tool applies the simple 20% — check with a pro if income stays at this level.</div>`;
+
+  const withData = rows.filter(r=>num(r.inp.niYTD)||num(r.inp.wagesYTD)||num(r.inp.fedWHYTD)||num(r.inp.coWHYTD));
+  if(withData.length){
+    const tbl = (label, reqKey, paidKey) => {
+      let h=`<table class="summary"><thead><tr><th>Quarter</th><th>${label} should be</th><th>${label} paid</th><th>Status</th></tr></thead><tbody>`;
+      withData.forEach(r=>{
+        const isCur=r.i===sel;
+        h+=`<tr><td>${r.p.label}<span class="qd">due ${shortDue(r.p.due)}</span></td>
+          <td>${usd0(r[reqKey])}</td>
+          <td>${r[paidKey]?usd0(r[paidKey]):'<span style="color:#b9c5d4">—</span>'}</td>
+          <td>${statusPill(r[reqKey], r[paidKey], isCur)}</td></tr>`;
+      });
+      return h+`</tbody></table>`;
+    };
+    html += tbl("Fed","fedInstallReq","fedPaid");
+    html += `<div style="height:18px"></div>` + tbl("CO","coInstallReq","coPaid");
+    const anyShort = withData.some(r=> !(r.i===sel && !r.fedPaid) && (r.fedPaid-r.fedInstallReq<-1 || r.coPaid-r.coInstallReq<-1));
+    if(anyShort) html+=`<div class="warn" style="margin-top:18px"><b>About a short quarter:</b> the IRS and Colorado figure the underpayment penalty separately for each quarter, so a past shortfall can't be fully erased later — it's essentially a little interest for the months it was late. The payment above already rolls any shortfall into what you pay now, which stops it from growing.</div>`;
+  }
+
+  const c=cur.c;
+  html+=`<details class="work"><summary><span class="chev">›</span> Show the worksheet math for ${cur.p.label}</summary>
+    <table class="wtable">
+      <tr><td class="wgroup">Self-employment tax (annualized)</td><td></td></tr>
+      <tr><td>Net profit × ${CFG.seNetFactor} = net earnings</td><td>${usd(c.netEarnings)}</td></tr>
+      <tr><td>Social Security portion</td><td>${usd(c.ssPart)}</td></tr>
+      <tr><td>Medicare portion</td><td>${usd(c.medPart)}</td></tr>
+      <tr class="tot"><td>Annualized SE tax</td><td>${usd(c.seTax)}</td></tr>
+      <tr><td class="wgroup">Income tax (annualized)</td><td></td></tr>
+      <tr><td>Annualized AGI</td><td>${usd(c.annAGI)}</td></tr>
+      <tr><td>− Standard deduction</td><td>${usd(CFG.std)}</td></tr>
+      <tr><td>− QBI deduction</td><td>${usd(c.qbiDed)}</td></tr>
+      <tr><td>= Taxable income</td><td>${usd(c.taxable)}</td></tr>
+      <tr><td>Federal income tax</td><td>${usd(c.incomeTax)}</td></tr>
+      ${c.addlMed>0?`<tr><td>Additional Medicare tax</td><td>${usd(c.addlMed)}</td></tr>`:``}
+      <tr class="tot"><td>Total annualized tax</td><td>${usd(c.totalTax)}</td></tr>
+      <tr><td class="wgroup">This installment</td><td></td></tr>
+      <tr><td>Federal required cumulative (× ${(cur.p.fedPct*100)}%)</td><td>${usd(c.fedCumReq)}</td></tr>
+      <tr><td>− Federal withheld YTD</td><td>${usd(cur.fedWH)}</td></tr>
+      <tr><td>Colorado tax (${(CFG.coRate*100).toFixed(2)}% × taxable)</td><td>${usd(c.coAnnTax)}</td></tr>
+      <tr><td>Colorado required cumulative (× ${(cur.p.coPct*100)}%)</td><td>${usd(c.coCumReq)}</td></tr>
+    </table></details>`;
+  out.innerHTML=html;
+}
+
+/* ===================== data file import / export ===================== */
+function showToast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2200); }
+
+$("#exportBtn").onclick = ()=>{
+  const payload={ version:state.version, taxYear:CFG.taxYear, filingStatus:state.filingStatus, savedAt:new Date().toISOString(), periods:state.periods };
+  download(JSON.stringify(payload,null,2), `quarterly-taxes-${CFG.taxYear}.json`);
+  showToast("Saved quarterly-taxes-"+CFG.taxYear+".json");
+};
+$("#importBtn").onclick = ()=> $("#fileInput").click();
+$("#fileInput").onchange = e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+      const d=JSON.parse(r.result);
+      if(!d.periods||!Array.isArray(d.periods)) throw 0;
+      state.filingStatus=d.filingStatus||"MFJ";
+      state.periods=CFG.periods.map((_,i)=>Object.assign(blankPeriod(), d.periods[i]||{}));
+      let last=0; state.periods.forEach((pp,i)=>{ if(num(pp.niYTD)||num(pp.wagesYTD)||num(pp.fedWHYTD)||num(pp.coWHYTD)) last=i; });
+      state.selected=Math.min(last, CFG.periods.length-1);
+      renderSeg(); renderPeriods(); renderResults();
+      showToast("Loaded — picked up where you left off");
+    }catch(_){ showToast("Couldn't read that file"); } };
+  r.readAsText(file); e.target.value="";
+};
+$("#resetBtn").onclick = ()=>{
+  if(confirm("Start fresh? This clears everything currently entered. (Export first if you want to keep it.)")){
+    state.periods=CFG.periods.map(()=>blankPeriod()); state.selected=0;
+    renderSeg(); renderPeriods(); renderResults(); showToast("Cleared");
+  }
+};
+
+/* ===================== tax-year config import / export ===================== */
+function validateConfig(c){
+  if(!c||typeof c!=="object") throw 0;
+  if(!c.standardDeduction||typeof c.standardDeduction.MFJ!=="number") throw 0;
+  if(!Array.isArray(c.federalBrackets_MFJ)||!c.federalBrackets_MFJ.length) throw 0;
+  if(typeof c.socialSecurityWageBase!=="number") throw 0;
+  if(typeof c.coloradoRate!=="number") throw 0;
+  if(!c.rates||typeof c.rates.socialSecurity!=="number") throw 0;
+  if(!Array.isArray(c.periods)||!c.periods.length) throw 0;
+  return true;
+}
+$("#loadCfgBtn").onclick = ()=> $("#cfgInput").click();
+$("#cfgInput").onchange = e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+      const c=JSON.parse(r.result); validateConfig(c);
+      CFG=deriveConfig(c); cfgLabel=(c.taxYear||"custom")+" (loaded)";
+      // keep entered data; reconcile period count
+      const n=CFG.periods.length;
+      while(state.periods.length<n) state.periods.push(blankPeriod());
+      state.periods.length=n;
+      state.selected=Math.min(state.selected,n-1);
+      updateChrome(); renderSeg(); renderPeriods(); renderResults();
+      showToast("Loaded "+CFG.taxYear+" tax rules");
+    }catch(_){ showToast("That config file isn't valid"); } };
+  r.readAsText(file); e.target.value="";
+};
+$("#dlCfgBtn").onclick = ()=>{
+  download(JSON.stringify(CFG.raw,null,2), `tax-config-${CFG.taxYear}.json`);
+  showToast("Downloaded tax-config-"+CFG.taxYear+".json");
+};
+
+function download(text, filename){
+  const blob=new Blob([text],{type:"application/json"}), url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* ===================== init ===================== */
+updateChrome(); renderSeg(); renderPeriods(); renderResults();
+</script>
+</body>
+</html>
