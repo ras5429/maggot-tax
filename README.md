@@ -37,27 +37,6 @@ and safe‑harbor methods aren't practical.
 ### Run locally
 Just open `index.html` in any modern browser — no build step, no server.
 
-### Deploy to GitHub Pages
-1. **Rename** `quarterly-tax-estimator.html` to **`index.html`** so the site loads at the
-   repo's root URL.
-2. Create a repo and push the files:
-   ```bash
-   git init
-   git add index.html tax-config-2026.json README.md
-   git commit -m "Quarterly estimated tax estimator"
-   git branch -M main
-   git remote add origin https://github.com/<you>/<repo>.git
-   git push -u origin main
-   ```
-3. In the repo, go to **Settings → Pages**.
-4. Under **Build and deployment → Source**, choose **Deploy from a branch**, select
-   **`main`** and **`/ (root)`**, and **Save**.
-5. After a minute, your app is live at:
-   ```
-   https://<you>.github.io/<repo>/
-   ```
-
----
 
 ## Using the app
 
